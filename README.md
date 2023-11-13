@@ -1,7 +1,7 @@
 
-# BlogZilla/Backend: Blogging Webiste
+# BlogZilla/Backend: Blogging Website
 
-This is the backend for BlogZilla blogging webiste.
+This is the backend for BlogZilla blogging Website.
 Contains api for Blogzilla.
 
 
@@ -39,6 +39,7 @@ Create a folder and open terminal and install this project by
 command 
 ```bash
 git clone https://github.com/Mr-Atanu-Roy/BlogZilla-Backend
+
 ```
 or simply download this project from https://github.com/Mr-Atanu-Roy/BlogZilla-Backend
 
@@ -46,26 +47,31 @@ In project directory Create a virtual environment of any name(say env)
 
 ```bash
   virtualenv env
+
 ```
 Activate the virtual environment
 
 For windows:
 ```bash
   env\Script\activate
+
 ```
 Install dependencies
 ```bash
   pip install -r requirements.txt
+
 ```
 Run migration commands
 ```bash
   py manage.py makemigrations
   py manage.py migrate
+
 ```
 
 Create a super user
 ```bash
   py manage.py createsuperuser
+
 ```
 Then add some data into database
 
@@ -73,6 +79,7 @@ Then add some data into database
 To run the project in your localserver
 ```bash
   py manage.py runserver
+  
 ```
 
 ## API Reference
