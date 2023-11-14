@@ -79,32 +79,44 @@ class UserLogin(APIView):
                 #authenticate the user            
                 user = auth.authenticate(request, email=email, password=password)
                 
-                if user is not None:              
-                    #get tokens for user is user exists
-                    tokens = get_token(user)
+                if user is not None:
+                    if user.is_verified:            
+                        #get tokens for user is user exists
+                        tokens = get_token(user)
+                        
+                        if tokens is not None:
+                            response = {
+                                "status": HTTP_200_OK,
+                                "data" : tokens,
+                                "message" : "Login successful.",
+                                "error": None
+                            }
+
+                            status=HTTP_200_OK
+
+                        else:
+                            response = {
+                                "status": HTTP_400_BAD_REQUEST,
+                                "data" : {
+                                    "access": None,
+                                    "refresh": None
+                                },
+                                "message": "Could not generate tokens.",
+                                "error" : "Invalid credentials."
+                            }
+                            status=HTTP_400_BAD_REQUEST
                     
-                    if tokens is not None:
-                        response = {
-                            "status": HTTP_200_OK,
-                            "data" : tokens,
-                            "message" : "Login successful.",
-                            "error": None
-                        }
-
-                        status=HTTP_200_OK
-
                     else:
-                        response = {
-                            "status": HTTP_400_BAD_REQUEST,
-                            "data" : {
-                                "access": None,
-                                "refresh": None
-                            },
-                            "message": "Could not generate tokens.",
-                            "error" : "Invalid credentials."
-                        }
-                        status=HTTP_400_BAD_REQUEST
-                
+                            response = {
+                                "status": HTTP_400_BAD_REQUEST,
+                                "data" : {
+                                    "access": None,
+                                    "refresh": None
+                                },
+                                "message": "User's email is not verified.",
+                                "error" : "Email not verified."
+                            }
+                            status=HTTP_400_BAD_REQUEST
                 else:
                     #return this if data is not valid
                     response = {
