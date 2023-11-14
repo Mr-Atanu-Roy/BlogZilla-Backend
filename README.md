@@ -85,6 +85,8 @@ To run the project in your localserver
 ## API Reference
 Check the `api.postman_collection.json` file for more info about API endpoints
 
+To allow request from any end point add the origin to `CORS_ORIGIN_WHITELIST` in settings.py
+
 
 ## Author
 
