@@ -110,7 +110,7 @@ class EmailVerifySerializer(serializers.Serializer):
         except(TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
             raise serializers.ValidationError({
-                'uidb64': 'uidb64 is invalid.'
+                "token": "Invalid link."
             })
         
         if user is not None and TokenGenerator().check_token(user, token):
@@ -129,8 +129,7 @@ class EmailVerifySerializer(serializers.Serializer):
 
 
         raise serializers.ValidationError({
-            'uidb64': 'Invalid uidb64.',
-            'token': 'Invalid token.'
+            "token": "Invalid link."
         })
 
 
@@ -195,13 +194,13 @@ class ResetPasswordSerializer(serializers.Serializer):
             except(TypeError, ValueError, OverflowError, Tokens.DoesNotExist):
                 db_token = None
                 raise serializers.ValidationError({
-                    'token': 'token is invalid.'
+                    'token': 'Invalid link.'
                 })
             
         except(TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
             raise serializers.ValidationError({
-                'uidb64': 'uidb64 is invalid.'
+                'uidb64': 'Invalid link.'
             })
         
         

@@ -224,8 +224,7 @@ class EmailVerify(APIView):
 
     def get(self, request):
         try:
-            
-            serializer = EmailVerifyLinkSendSerializer(data=request.data)
+            serializer = EmailVerifyLinkSendSerializer(data=request.query_params)
             if serializer.is_valid():
                 response = {
                     "status": HTTP_200_OK,
@@ -298,8 +297,7 @@ class ResetPassword(APIView):
     
     def get(self, request):
         try:
-            
-            serializer = ResetPasswordLinkSendSerializer(data=request.data)
+            serializer = ResetPasswordLinkSendSerializer(data=request.query_params)
             if serializer.is_valid():
                 response = {
                     "status": HTTP_200_OK,
