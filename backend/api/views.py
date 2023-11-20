@@ -18,12 +18,15 @@ from rest_framework.status import (
     HTTP_400_BAD_REQUEST,
     HTTP_500_INTERNAL_SERVER_ERROR
 )
+
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from .permission import IsOwnerOrReadOnly, BlogPermission
-
+from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import (
+    MyTokenObtainPairSerializer,
+
     UserLoginSerializer,
     UserSignupSerializer,
 
@@ -40,7 +43,8 @@ from .serializers import (
 
     FollowUnfollowSerializer,
 
-    BlogSerializer,
+    BlogDetailSerializer,
+    BlogListCreateSerializer,
 
     BlogCommentsSerializer,
     ReplyCommentsSerializer,
@@ -61,107 +65,12 @@ from .filters import (
     LatestFilterBackend, 
 )
 
-from .utils import get_token
 
 # Create your views here.
 
-class UserLogin(APIView):
-
-    def post(self, request):
-
-        try:
-            serializer = UserLoginSerializer(data=request.data)
-            if serializer.is_valid():
-                # get email and password if data is valid 
-                email = serializer.validated_data.get("email")
-                password = serializer.validated_data.get("password")
-                
-                #authenticate the user            
-                user = auth.authenticate(request, email=email, password=password)
-                
-                if user is not None:
-                    if user.is_verified:            
-                        #get tokens for user is user exists
-                        tokens = get_token(user)
-                        
-                        if tokens is not None:
-                            response = {
-                                "status": HTTP_200_OK,
-                                "data" : tokens,
-                                "message" : "Login successful.",
-                                "error": None
-                            }
-
-                            status=HTTP_200_OK
-
-                        else:
-                            response = {
-                                "status": HTTP_400_BAD_REQUEST,
-                                "data" : {
-                                    "access": None,
-                                    "refresh": None
-                                },
-                                "message": "Could not generate tokens.",
-                                "error" : "Invalid credentials."
-                            }
-                            status=HTTP_400_BAD_REQUEST
-                    
-                    else:
-                            response = {
-                                "status": HTTP_400_BAD_REQUEST,
-                                "data" : {
-                                    "access": None,
-                                    "refresh": None
-                                },
-                                "message": "User's email is not verified.",
-                                "error" : "Email not verified."
-                            }
-                            status=HTTP_400_BAD_REQUEST
-                else:
-                    #return this if data is not valid
-                    response = {
-                        "status": HTTP_400_BAD_REQUEST,
-                        "data" : {
-                            "access": None,
-                            "refresh": None
-                        },
-                        "message": "User does not exists.",
-                        "error" : "Invalid credentials."
-                    }
-                    
-                    status=HTTP_400_BAD_REQUEST
-                    
-            
-            else:
-                #return this if email and password is not given
-                response = {
-                    "status": HTTP_400_BAD_REQUEST,
-                    "data" : {
-                        "access": None,
-                        "refresh": None
-                    },
-                    "message": "Invalid data.",
-                    "error" : serializer.errors
-                }
-                status = HTTP_400_BAD_REQUEST
-        
-        except Exception as e:
-            #return this in case of any error
-            response = {
-                    "status": HTTP_500_INTERNAL_SERVER_ERROR,
-                    "data" : {
-                        "access": None,
-                        "refresh": None
-                    },
-                    "message" : "Internal server error.",
-                    "error": None
-                }
-            status = HTTP_500_INTERNAL_SERVER_ERROR
-        
-        
-
-        return Response(response, status)
-
+#view for login. Serializer is customised to custom claims
+class UserLogin(TokenObtainPairView):
+    serializer_class = MyTokenObtainPairSerializer
 
 
 class UserSignup(APIView):
@@ -398,6 +307,34 @@ class PeopleRetrieve(RetrieveAPIView):
     lookup_field = 'uuid'
     
 
+#list following of a user who is logged in
+class UserFollowingList(ListAPIView):
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+
+    serializer_class = UserPublicSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.following.all()
+    
+
+#list followers of a user who is logged in
+class UserFollowersList(ListAPIView):
+
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+    http_method_names = ['get']
+
+    serializer_class = UserPublicSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return user.followers.all()
+
+
 #list followers of a user
 class FollowersList(ListAPIView):
     
@@ -478,7 +415,7 @@ class FollowUnfollow(APIView):
 
     #check if user is following and followed
     def get(self, request):
-        uuid = request.data.get('user', None)
+        uuid = request.query_params.get('user')
         if uuid:
             user = self.get_user(uuid)
             serializer = FollowUnfollowSerializer(context={"current_user": request.user,})
@@ -528,6 +465,24 @@ class FollowUnfollow(APIView):
     
 
 
+#list blogs of a specific user both published and unpublished
+class UserBlogsList(ListAPIView):
+        '''
+        1. List the blogs of a user
+        2. Filter blog listing based on blog title, author name, author uuid query params
+        '''
+    
+        authentication_classes = [JWTAuthentication]
+        permission_classes = [IsAuthenticated]
+    
+        serializer_class = BlogListCreateSerializer
+        http_method_names = ['get']
+    
+        def get_queryset(self):
+            user = self.request.user
+            return Blog.objects.filter(user=user)
+
+
 #list and create blogs
 class BlogListCreate(ListCreateAPIView):
     '''
@@ -540,16 +495,8 @@ class BlogListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [LatestFilterBackend, BlogFilterBackend]
 
-    serializer_class = BlogSerializer
+    serializer_class = BlogListCreateSerializer
     queryset = Blog.objects.filter(published = True)
-
-
-    def get_queryset(self):
-        if self.request.user.is_authenticated:
-            # If user is logged in, show his/her unpublished blogs too
-            return Blog.objects.filter(user=self.request.user) | Blog.objects.filter(published=True)
-        return self.queryset
-
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -572,7 +519,7 @@ class BlogRetrieveUpdateDelete(RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [BlogPermission]
 
-    serializer_class = BlogSerializer
+    serializer_class = BlogDetailSerializer
     queryset = Blog.objects.all()
     lookup_field = 'uuid'
 

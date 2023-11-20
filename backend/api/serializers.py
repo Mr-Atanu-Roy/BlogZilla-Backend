@@ -1,8 +1,10 @@
+from typing import Any, Dict
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.utils import timezone
 from rest_framework.pagination import PageNumberPagination
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from backend.models import User, UserProfile, Tokens, Blog, BlogComments, BlogLikes, ReplyComments, LikeComments
 from backend.utils import TokenGenerator, EmailSender
@@ -10,6 +12,41 @@ from backend.utils import TokenGenerator, EmailSender
 from .utils import str_to_list, list_to_str, is_valid_sequence
 
 
+#serializer for custom claims: access token -> uuid, first_name, last_name
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # Add custom claims
+        token['uuid'] = str(user.uuid)
+        token['first_name'] = user.first_name
+        token['last_name'] = user.last_name
+
+        return token
+    
+    def validate(self, attrs: Dict[str, Any]) -> Dict[str, str]:
+        data = super().validate(attrs)
+        
+        password = attrs.get('password', None)
+        email = attrs.get('email', None)
+        if email and password:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                raise serializers.ValidationError({
+                    'email': 'Account with this email does not exists.'
+                })
+
+            if not user.is_verified:
+                raise serializers.ValidationError({
+                    'email': 'Email is not verified.'
+                })
+        
+        
+        return data
+
+        
 class UserLoginSerializer(serializers.Serializer):
 
     email = serializers.EmailField(required=True)
@@ -127,10 +164,6 @@ class EmailVerifySerializer(serializers.Serializer):
 
                 return super().validate(data)
 
-
-        raise serializers.ValidationError({
-            "token": "Invalid link."
-        })
 
 
         
@@ -370,10 +403,10 @@ class PeoplePublicSerializer(serializers.ModelSerializer):
         return None
 
 
-#serializer for blog model --> list, create, update, delete
-class BlogSerializer(serializers.ModelSerializer):
+#serializer for blog model --> retrieve, update, delete. Shows detail view of blog
+class BlogDetailSerializer(serializers.ModelSerializer):
+
     user = UserPublicSerializer(read_only=True)
-    truncated_content = serializers.SerializerMethodField('get_truncated_content')
     tags_parsed = serializers.SerializerMethodField('get_tags_parsed')
     tags = serializers.ListField(child=serializers.CharField(max_length=350), write_only=True, required=True)
 
@@ -393,12 +426,8 @@ class BlogSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Blog
-        fields = ["uuid", "user", "created_at", "title", "slug", "header_img", "content", "truncated_content", "tags", "tags_parsed", "likes_no", "comments_no", "published", "blog_likes", "blog_comments"]
+        fields = ["uuid", "user", "created_at", "title", "slug", "header_img", "content", "tags", "tags_parsed", "likes_no", "comments_no", "published", "blog_likes", "blog_comments"]
         read_only_fields = ["uuid", "user", "created_at", "slug", "likes_no", "comments_no", "content_summery", "tags_parsed"]
-        extra_kwargs = {
-            'content': {'write_only': True},
-            'published': {'write_only': True}
-        }
 
     def tags_validate(self, tags):
         if tags and not is_valid_sequence(tags):
@@ -409,15 +438,48 @@ class BlogSerializer(serializers.ModelSerializer):
         return tags
 
     def create(self, validated_data):
-        if validated_data.get("tags"):
-            validated_data["tags"] = list_to_str(validated_data.get("tags"))
-        return super().create(validated_data)
+        return None
     
     def update(self, instance, validated_data):
         if validated_data.get("tags"):
             validated_data["tags"] = list_to_str(validated_data.get("tags"))
         return super().update(instance, validated_data)
         
+    
+    def get_tags_parsed(self, obj):
+        return str_to_list(obj.tags)
+
+
+
+#serializer for blog model --> list and create. Shows minimal view of blog
+class BlogListCreateSerializer(serializers.ModelSerializer):
+
+    user = UserPublicSerializer(read_only=True)
+    truncated_content = serializers.SerializerMethodField('get_truncated_content')
+    tags_parsed = serializers.SerializerMethodField('get_tags_parsed')
+    tags = serializers.ListField(child=serializers.CharField(max_length=350), write_only=True, required=True)
+
+    
+    class Meta:
+        model = Blog
+        fields = ["uuid", "user", "created_at", "title", "slug", "header_img", "content", "truncated_content", "tags", "tags_parsed", "likes_no", "comments_no", "published"]
+        read_only_fields = ["uuid", "user", "created_at", "slug", "likes_no", "comments_no", "content_summery", "tags_parsed"]
+        extra_kwargs = {
+            'content': {'write_only': True},
+        }
+
+    def tags_validate(self, tags):
+        if tags and not is_valid_sequence(tags):
+            raise serializers.ValidationError({
+                'tags': 'Tags should be list of strings.'
+            })
+        
+        return tags
+    
+    def create(self, validated_data):
+        if validated_data.get("tags"):
+            validated_data["tags"] = list_to_str(validated_data.get("tags"))
+        return super().create(validated_data)
     
     def get_truncated_content(self, obj):
         content_words = obj.content.split()

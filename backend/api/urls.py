@@ -10,10 +10,13 @@ urlpatterns = [
     path('auth/signup/', UserSignup.as_view(), name='api_signup'),
     path('auth/email-verify/', EmailVerify.as_view(), name='email_verification'),
     path('auth/password-reset/', ResetPassword.as_view(), name='password_reset'),
-    path('auth/token/refresh/', TokenRefreshView.as_view(), name='get_refresh_token'),
+    path('auth/token/', TokenRefreshView.as_view(), name='get_refresh_token'),
 
     #user details & profile related urls
     path('user/me/', UserPrivateProfile.as_view(), name='user_me'),
+    path('user/blogs/', UserBlogsList.as_view(), name='user_blog'),
+    path('user/following/', UserFollowingList.as_view(), name='user_following'),
+    path('user/followers/', UserFollowersList.as_view(), name='user_followers'),
     path('user/follow-unfollow/', FollowUnfollow.as_view(), name='follow_unfollow'),
 
     #other user/people details & profile related urls
