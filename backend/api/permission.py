@@ -39,15 +39,19 @@ class IsOwner(BasePermission):
         return False
 
 
-
+#allow only the owner of the blog to delete/update/edit it
 class BlogPermission(BasePermission):
     def has_object_permission(self, request, view, obj):
         # If the user is not logged in, they can only view published blogs.
         if not request.user.is_authenticated:
-            print(obj.published)
-            return obj.published
+            if request.method in SAFE_METHODS:
+                return True
+            return False
 
         # If the user is logged in and the blog's author is the current user,
         # they can view the blog even if it's not published.
-        return obj.user == request.user or obj.published
+        if request.user == obj.user:
+            return True
+        elif request.method in SAFE_METHODS:
+            return obj.published
 
