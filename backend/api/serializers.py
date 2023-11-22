@@ -2,7 +2,6 @@ from typing import Any, Dict
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 from django.utils import timezone
-from rest_framework.pagination import PageNumberPagination
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -267,10 +266,15 @@ class UserPublicSerializer(serializers.ModelSerializer):
     user for profile/user cards in following and followers 
     '''
 
+    blogs_published_no = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ['uuid', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'blogs_published_no']
+        
     
+    def get_blogs_published_no(self, obj):
+        return obj.blog_set.filter(published=True).count()
 
 
 #serializer for UserProfile model
@@ -294,29 +298,11 @@ class UserProfileSerializer(serializers.ModelSerializer):
         return str_to_list(obj.interests)
     
     def get_followers(self, obj):
-        try:
-            followers = obj.followers.all()
-            paginator = PageNumberPagination()
-            result_page = paginator.paginate_queryset(followers, self.context['request'])
-            serializer = UserPublicSerializer(result_page, many=True)
-            paginated_response = paginator.get_paginated_response(serializer.data)
-            return paginated_response.data
-        except Exception as e:  #exception added for PageNotFound: when next page does not exists
-            print(e)
-            return None
+            return obj.followers.all().count()
     
 
     def get_following(self, obj):
-        try:
-            following = obj.following.all()
-            paginator = PageNumberPagination()
-            result_page = paginator.paginate_queryset(following, self.context['request'])
-            serializer = UserPublicSerializer(result_page, many=True)
-            paginated_response = paginator.get_paginated_response(serializer.data)
-            return paginated_response.data
-        except Exception as e:  #exception added for PageNotFound: when next page does not exists
-            print(e)
-            return None
+        return obj.following.all().count()
 
         
 
@@ -327,11 +313,16 @@ class UserPrivateSerializer(serializers.ModelSerializer):
     '''
 
     user_profile = UserProfileSerializer()
+    blogs_published_no = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['uuid', 'email', 'phone', 'is_verified', 'date_joined', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'blogs_published_no', 'user_profile']
-        read_only_fields = ['uuid', 'email', 'is_verified', 'date_joined', 'blogs_published_no']
+        fields = ['uuid', 'email', 'phone', 'is_verified', 'date_joined', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'user_profile', 'blogs_published_no']
+        read_only_fields = ['uuid', 'email', 'is_verified', 'date_joined']
+
+
+    def get_blogs_published_no(self, obj):
+        return obj.blog_set.filter(published=True).count()
 
 
     def validate_phone(self, phone):
@@ -390,11 +381,15 @@ class PeoplePublicSerializer(serializers.ModelSerializer):
     '''
 
     user_profile = UserProfileSerializer(read_only=True)
+    blogs_published_no = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ['uuid', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'blogs_published_no', 'user_profile']
 
+
+    def get_blogs_published_no(self, obj):
+        return obj.blog_set.filter(published=True).count()
 
     def update(self, instance, validated_data):
         return None
@@ -410,23 +405,9 @@ class BlogDetailSerializer(serializers.ModelSerializer):
     tags_parsed = serializers.SerializerMethodField('get_tags_parsed')
     tags = serializers.ListField(child=serializers.CharField(max_length=350), write_only=True, required=True)
 
-    blog_comments = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='blog_comment_retrieve_update_delete',
-        lookup_field='uuid'
-    )
-
-    blog_likes = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='blog_like_update_delete',
-        lookup_field='uuid'
-    )
-
     class Meta:
         model = Blog
-        fields = ["uuid", "user", "created_at", "title", "slug", "header_img", "content", "tags", "tags_parsed", "likes_no", "comments_no", "published", "blog_likes", "blog_comments"]
+        fields = ["uuid", "user", "created_at", "title", "slug", "header_img", "content", "tags", "tags_parsed", "likes_no", "comments_no", "published"]
         read_only_fields = ["uuid", "user", "created_at", "slug", "likes_no", "comments_no", "content_summery", "tags_parsed"]
 
     def tags_validate(self, tags):
@@ -437,8 +418,6 @@ class BlogDetailSerializer(serializers.ModelSerializer):
         
         return tags
 
-    def create(self, validated_data):
-        return None
     
     def update(self, instance, validated_data):
         if validated_data.get("tags"):
@@ -568,44 +547,23 @@ class FollowUnfollowSerializer(serializers.Serializer):
         return validated_data
 
 
-        
-# TODO: Show the child comments under each instances
+
 #serializer for reply comment model --> list, create, update, delete
 class ReplyCommentsSerializer(serializers.ModelSerializer):
 
-    user = serializers.HyperlinkedRelatedField(
-        many=False,
-        read_only=True,
-        view_name='people_retrieve',
-        lookup_field='uuid'
-    )
 
-    parent_reply_comment = serializers.HyperlinkedRelatedField(
-        many=False,
-        read_only=True,
-        view_name='reply_comment_retrieve_update_delete',
-        lookup_field='uuid'
-    )
-    parent_blog_comment = serializers.HyperlinkedRelatedField(
-        many=False,
-        read_only=True,
-        view_name='blog_comment_retrieve_update_delete',
-        lookup_field='uuid'
-    )
+    user = UserPublicSerializer(read_only=True)
 
-    reply_comments = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='reply_comment_retrieve_update_delete',
-        lookup_field='uuid'
-    )
+    reply_comments = serializers.SerializerMethodField()
 
+    def get_reply_comments(self, obj):
+        children = ReplyComments.objects.filter(parent_reply_comment=obj)
+        return children.count()
 
     class Meta:
         model = ReplyComments
-        # fields = '__all__'
-        fields = ["uuid", "user", "parent_blog_comment", "parent_reply_comment", "comment", "likes_no", "comments_no", "created_at", "reply_comments"]
-        read_only_fields = ["uuid", "user", "parent_blog_comment", "parent_reply_comment", "likes_no", "comments_no", "created_at"]
+        fields = ["uuid", "user", "comment", "likes_no", "comments_no", "created_at", "reply_comments"]
+        read_only_fields = ["uuid", "user", "likes_no", "comments_no", "created_at"]
 
         
     def create(self, validated_data):
@@ -624,34 +582,23 @@ class ReplyCommentsSerializer(serializers.ModelSerializer):
             return reply
         
             
-
 #serializer for blog comments
 class BlogCommentsSerializer(serializers.ModelSerializer):
 
-    user = serializers.HyperlinkedRelatedField(
-        many=False,
-        read_only=True,
-        view_name='people_retrieve',
-        lookup_field='uuid'
-    )
+    user = UserPublicSerializer(read_only=True)
+    
+    comments_no = serializers.SerializerMethodField()
+    likes_no = serializers.SerializerMethodField()
 
-    reply_comments = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='reply_comment_retrieve_update_delete',
-        lookup_field='uuid'
-    )
-
-    comment_likes = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='comment_likes_update_delete',
-        lookup_field='uuid'
-    )
+    def get_comments_no(self, obj):
+        return obj.reply_comments.count()
+    
+    def get_likes_no(self, obj):
+        return obj.like_blog_comments.count()
 
     class Meta:
         model = BlogComments
-        fields = ["uuid", "user", "comment", "likes_no", "comments_no", "created_at", "comment_likes", "reply_comments"]
+        fields = ["uuid", "user", "comment", "likes_no", "comments_no", "created_at"]
         read_only_fields = ["uuid", "user", "likes_no", "comments_no", "created_at"]
 
 
@@ -659,12 +606,7 @@ class BlogCommentsSerializer(serializers.ModelSerializer):
 #serializer for blog likes
 class BlogLikesSerializer(serializers.ModelSerializer):
 
-    user = serializers.HyperlinkedRelatedField(
-        many=False,
-        read_only=True,
-        view_name='people_retrieve',
-        lookup_field='uuid'
-    )
+    user = UserPublicSerializer(read_only=True)
 
 
     class Meta:
@@ -693,10 +635,12 @@ class BlogLikesSerializer(serializers.ModelSerializer):
 #serializer for comment likes
 class CommentsLikeSerializer(serializers.ModelSerializer):
 
+    user = UserPublicSerializer(read_only=True)
+
     class Meta:
         model = LikeComments
-        fields = ["uuid", "user", "parent_blog_comment", "parent_reply_comment", "created_at"]
-        read_only_fields = ["uuid", "user", "parent_blog_comment", "parent_reply_comment", "created_at"]
+        fields = ["uuid", "user", "created_at"]
+        read_only_fields = ["uuid", "user", "created_at"]
 
 
     
