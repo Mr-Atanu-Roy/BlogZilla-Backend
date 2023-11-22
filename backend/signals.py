@@ -1,13 +1,12 @@
 from django.db.models.signals import post_save, pre_delete
 from django.dispatch import receiver
 
-from backend.models import User, UserProfile, Tokens, Blog, BlogComments, BlogLikes, ReplyComments, LikeComments
+from backend.models import User, UserProfile, Tokens, BlogComments, BlogLikes, ReplyComments, LikeComments
 from .utils import EmailSender
 
-from asgiref.sync import sync_to_async
 
 #signals
-@sync_to_async
+
 @receiver(post_save, sender=User)
 def user_created_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -31,7 +30,6 @@ def user_created_handler(sender, instance, created, *args, **kwargs):
         pass
 
 
-@sync_to_async
 @receiver(post_save, sender=Tokens)
 def token_created_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -53,42 +51,7 @@ def token_created_handler(sender, instance, created, *args, **kwargs):
         pass
 
 
-@sync_to_async
-@receiver(post_save, sender=Blog)
-def blog_created_handler(sender, instance, created, *args, **kwargs):
-    '''
-    increase the blogs_published_no of the User by 1 when a new Blog is created/published
-    '''
 
-    try:
-        if created and instance.published:
-            if instance.user.blogs_published_no >= 0:
-                instance.user.blogs_published_no += 1
-                instance.user.save()
-
-    except Exception as e:
-        print(e)
-        pass
-
-
-@sync_to_async
-@receiver(pre_delete, sender=Blog)
-def blog_delete_handler(sender, instance, *args, **kwargs):
-    '''
-    decrease the blogs_published_no of the User by 1 when a Blog is deleted
-    '''
-
-    try:
-        if instance.user.blogs_published_no >= 1:
-            instance.user.blogs_published_no -= 1
-            instance.user.save()
-
-    except Exception as e:
-        print(e)
-        pass
-
-
-@sync_to_async
 @receiver(post_save, sender=BlogComments)
 def blog_comment_create_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -108,7 +71,7 @@ def blog_comment_create_handler(sender, instance, created, *args, **kwargs):
         pass
 
 
-@sync_to_async
+
 @receiver(pre_delete, sender=BlogComments)
 def blog_comment_delete_handler(sender, instance, *args, **kwargs):
     '''
@@ -126,7 +89,7 @@ def blog_comment_delete_handler(sender, instance, *args, **kwargs):
         pass
 
 
-@sync_to_async
+
 @receiver(post_save, sender=BlogLikes)
 def blog_like_created_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -147,7 +110,7 @@ def blog_like_created_handler(sender, instance, created, *args, **kwargs):
 
 
 
-@sync_to_async
+
 @receiver(pre_delete, sender=BlogLikes)
 def blog_like_delete_handler(sender, instance, *args, **kwargs):
     '''
@@ -165,7 +128,7 @@ def blog_like_delete_handler(sender, instance, *args, **kwargs):
         pass
 
 
-@sync_to_async
+
 @receiver(post_save, sender=ReplyComments)
 def reply_comment_created_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -195,7 +158,7 @@ def reply_comment_created_handler(sender, instance, created, *args, **kwargs):
 
 
 
-@sync_to_async
+
 @receiver(pre_delete, sender=ReplyComments)
 def reply_comment_delete_handler(sender, instance, *args, **kwargs):
     '''
@@ -223,7 +186,7 @@ def reply_comment_delete_handler(sender, instance, *args, **kwargs):
 
 
 
-@sync_to_async
+
 @receiver(post_save, sender=LikeComments)
 def like_comment_created_handler(sender, instance, created, *args, **kwargs):
     '''
@@ -252,7 +215,7 @@ def like_comment_created_handler(sender, instance, created, *args, **kwargs):
         pass
 
 
-@sync_to_async
+
 @receiver(pre_delete, sender=LikeComments)
 def like_comment_delete_handler(sender, instance, *args, **kwargs):
     '''

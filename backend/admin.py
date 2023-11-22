@@ -40,7 +40,7 @@ class UserAdmin(admin.ModelAdmin):
     fieldsets = [
         ("User Details", {
             "fields": (
-                ['email', 'password', 'phone', 'first_name', 'last_name', 'profession', 'country', 'profile_pic', 'blogs_published_no']
+                ['email', 'password', 'phone', 'first_name', 'last_name', 'profession', 'country', 'profile_pic']
             ),
         }),
         ("More Details", {

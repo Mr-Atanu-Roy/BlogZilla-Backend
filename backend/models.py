@@ -24,8 +24,6 @@ class User(AbstractUser):
     profile_pic = models.ImageField(upload_to='profile_pic/', blank=True)
     country = models.CharField(max_length=80, blank=True)
 
-    blogs_published_no = models.IntegerField(default=0)
-
     objects = Usermanager()
     
     USERNAME_FIELD = 'email'
