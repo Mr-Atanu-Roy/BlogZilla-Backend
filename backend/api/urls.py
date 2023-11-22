@@ -14,7 +14,7 @@ urlpatterns = [
 
     #user details & profile related urls
     path('user/me/', UserPrivateProfile.as_view(), name='user_me'),
-    path('user/blogs/', UserBlogsList.as_view(), name='user_blog'),
+    path('user/blog/', UserBlogsList.as_view(), name='user_blog'),
     path('user/following/', UserFollowingList.as_view(), name='user_following'),
     path('user/followers/', UserFollowersList.as_view(), name='user_followers'),
     path('user/follow-unfollow/', FollowUnfollow.as_view(), name='follow_unfollow'),
@@ -26,8 +26,8 @@ urlpatterns = [
     path('following/<uuid>', FollowingList.as_view(), name='following'),
 
     #blog related urls
-    path('blogs/', BlogListCreate.as_view(), name='blog_list_create'),
-    path('blogs/<uuid>', BlogRetrieveUpdateDelete.as_view(), name='blog_retrieve_update_delete'),
+    path('blog/', BlogListCreate.as_view(), name='blog_list_create'),
+    path('blog/<uuid>', BlogRetrieveUpdateDelete.as_view(), name='blog_retrieve_update_delete'),
 
     #comment related urls
     path('blog/<uuid>/comments/', BlogCommentListCreate.as_view(), name='blog_comment_list_create'),
