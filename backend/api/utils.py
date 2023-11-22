@@ -25,6 +25,7 @@ def str_to_list(data):
     o/p -> ['abc', 'xyz', 'pqr']
     '''
 
+    if data.strip() == '': return []
     l = data.split(',')
     stripped_list = [item.strip() for item in l]
 
@@ -37,6 +38,8 @@ def list_to_str(data):
     i/p -> ['abc', 'xyz', 'pqr']
     o/p -> "abc, xyz, pqr"
     '''
+
+    if len(data) == 0: return ''
     cleaned_list = [item.strip() for item in data]
     return ', '.join(cleaned_list)
 
