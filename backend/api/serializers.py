@@ -266,15 +266,18 @@ class UserPublicSerializer(serializers.ModelSerializer):
     user for profile/user cards in following and followers 
     '''
 
-    blogs_published_no = serializers.SerializerMethodField()
+    blogs_published = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['uuid', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'blogs_published_no']
+        fields = ['uuid', 'first_name', 'last_name', 'profile_pic', 'profession', 'country', 'blogs_published']
         
     
-    def get_blogs_published_no(self, obj):
-        return obj.blog_set.filter(published=True).count()
+    def get_blogs_published(self, obj):
+        print(obj)
+        print(type(obj))
+        # return Blog.objects.filter(user=obj).count()
+        return 1
 
 
 #serializer for UserProfile model

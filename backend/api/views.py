@@ -21,8 +21,12 @@ from rest_framework.status import (
 
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
-from .permission import IsOwnerOrReadOnly, BlogPermission
 from rest_framework_simplejwt.views import TokenObtainPairView
+from .permission import (
+    IsOwner,
+    IsOwnerOrReadOnly,
+    BlogPermission
+)
 
 from .serializers import (
     MyTokenObtainPairSerializer,
@@ -312,13 +316,14 @@ class UserFollowingList(ListAPIView):
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    filter_backends = [CountryFilterBackend, NameFilterBackend]
     http_method_names = ['get']
 
     serializer_class = UserPublicSerializer
 
     def get_queryset(self):
         user = self.request.user
-        return user.following.all()
+        return UserProfile.objects.get(user=user).following.all()
     
 
 #list followers of a user who is logged in
@@ -332,7 +337,7 @@ class UserFollowersList(ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        return user.followers.all()
+        return UserProfile.objects.get(user=user).followers.all()
 
 
 #list followers of a user
@@ -531,7 +536,7 @@ class BlogCommentListCreate(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = BlogCommentsSerializer
-    queryset = BlogComments.objects.all()
+    queryset = BlogComments.objects.all().order_by('-created_at')
     filter_backends = [LatestFilterBackend]
 
     def get_blog(self, uuid):
@@ -542,7 +547,7 @@ class BlogCommentListCreate(ListCreateAPIView):
 
     def get_queryset(self):
         uuid = self.kwargs['uuid']
-        return BlogComments.objects.filter(blog__uuid=uuid)
+        return BlogComments.objects.filter(blog__uuid=uuid).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -598,7 +603,7 @@ class ReplyCommentListCreate(ListCreateAPIView):
         uuid = self.kwargs['uuid']
         return ReplyComments.objects.filter(
             Q(parent_reply_comment__uuid=uuid) | Q(parent_blog_comment__uuid=uuid)
-        )
+        ).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -644,7 +649,7 @@ class BlogLikesListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     serializer_class = BlogLikesSerializer
-    queryset = BlogLikes.objects.all()
+    queryset = BlogLikes.objects.all().order_by('-created_at')
     filter_backends = [LatestFilterBackend]
 
     def get_blog(self, uuid):
@@ -655,7 +660,7 @@ class BlogLikesListCreate(ListCreateAPIView):
 
     def get_queryset(self):
         uuid = self.kwargs['uuid']
-        return BlogLikes.objects.filter(blog__uuid=uuid)
+        return BlogLikes.objects.filter(blog__uuid=uuid).order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         blog = self.get_blog(uuid=kwargs['uuid'])
@@ -675,10 +680,16 @@ class BlogLikesListCreate(ListCreateAPIView):
 class BlogLikesRetrieveDelete(RetrieveDestroyAPIView):
 
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = BlogLikesSerializer
-    queryset = BlogLikes.objects.all()
     lookup_field = "uuid"
+
+    def get_object(self):
+        uuid = self.kwargs['uuid'] #Blog model instance uuid
+        blog_like = BlogLikes.objects.filter(blog__uuid=uuid)
+
+        return blog_like.first()
+
 
 
 #list and create likes of a specific comment
@@ -712,7 +723,7 @@ class CommentLikesListCreate(ListCreateAPIView):
         uuid = self.kwargs['uuid']
         return LikeComments.objects.filter(
             Q(parent_reply_comment__uuid=uuid) | Q(parent_blog_comment__uuid=uuid)
-        )
+        ).order_by('-created_at')
     
     def create(self, request, *args, **kwargs):
 
@@ -744,9 +755,15 @@ class CommentLikesListCreate(ListCreateAPIView):
 class CommentLikesRetrieveDelete(RetrieveDestroyAPIView):
     
     authentication_classes = [JWTAuthentication]
-    permission_classes = [IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOwner]
     serializer_class = CommentsLikeSerializer
-    queryset = LikeComments.objects.all()
     lookup_field = "uuid"
+
+    def get_object(self):
+        uuid = self.kwargs['uuid'] #BlogLikes/LikeComments model instance uuid
+        return LikeComments.objects.filter(
+            Q(parent_reply_comment__uuid=uuid) | Q(parent_blog_comment__uuid=uuid)
+        ).first()
+
 
 
