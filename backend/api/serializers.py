@@ -254,10 +254,7 @@ class UserPublicSerializer(serializers.ModelSerializer):
         
     
     def get_blogs_published(self, obj):
-        print(obj)
-        print(type(obj))
-        # return Blog.objects.filter(user=obj).count()
-        return 1
+        return Blog.objects.filter(user=obj).count()
 
 
 #serializer for UserProfile model
