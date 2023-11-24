@@ -329,6 +329,7 @@ class UserFollowersList(ListAPIView):
 
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+    filter_backends = [CountryFilterBackend, NameFilterBackend]
     http_method_names = ['get']
 
     serializer_class = UserPublicSerializer
