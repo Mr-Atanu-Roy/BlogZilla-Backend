@@ -22,8 +22,8 @@ urlpatterns = [
     #other user/people details & profile related urls
     path('people/', PeopleList.as_view(), name='people_list'),
     path('people/<uuid>', PeopleRetrieve.as_view(), name='people_retrieve'),
-    path('followers/<uuid>', FollowersList.as_view(), name='followers'),
-    path('following/<uuid>', FollowingList.as_view(), name='following'),
+    path('people/followers/<uuid>', FollowersList.as_view(), name='followers'),
+    path('people/following/<uuid>', FollowingList.as_view(), name='following'),
 
     #blog related urls
     path('blog/', BlogListCreate.as_view(), name='blog_list_create'),
