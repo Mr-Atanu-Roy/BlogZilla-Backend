@@ -302,7 +302,7 @@ class UserPrivateSerializer(serializers.ModelSerializer):
 
 
     def get_blogs_published_no(self, obj):
-        return obj.blog_set.filter(published=True).count()
+        return Blog.objects.filter(user=obj).count()
 
 
     def validate_phone(self, phone):
@@ -369,7 +369,7 @@ class PeoplePublicSerializer(serializers.ModelSerializer):
 
 
     def get_blogs_published_no(self, obj):
-        return obj.blog_set.filter(published=True).count()
+        return Blog.objects.filter(user=obj).count()
 
     def update(self, instance, validated_data):
         return None
