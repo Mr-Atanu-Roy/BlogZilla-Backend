@@ -45,27 +45,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         return data
 
-        
-class UserLoginSerializer(serializers.Serializer):
 
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(required=True)
-
-    def validate(self, data):
-        email = data.get('email', None)
-        password = data.get('password', None)
-
-        if not email:
-            raise serializers.ValidationError({
-                'email': 'Email address is required.'
-            })
-        if not password:
-            raise serializers.ValidationError({
-                'password': 'Password is required.'
-            })
-
-        return super().validate(data)
-    
 
 class UserSignupSerializer(serializers.ModelSerializer):
 

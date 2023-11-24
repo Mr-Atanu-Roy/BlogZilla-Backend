@@ -1,4 +1,3 @@
-from django.contrib import auth
 from django.http import Http404
 from django.db.models import Q
 
@@ -31,7 +30,6 @@ from .permission import (
 from .serializers import (
     MyTokenObtainPairSerializer,
 
-    UserLoginSerializer,
     UserSignupSerializer,
 
     EmailVerifyLinkSendSerializer,
