@@ -21,6 +21,8 @@ from rest_framework.status import (
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.filters import OrderingFilter
+
 from .permission import (
     IsOwner,
     IsOwnerOrReadOnly,
@@ -343,6 +345,7 @@ class UserFollowersList(ListAPIView):
 class FollowersList(ListAPIView):
     
     serializer_class = UserPublicSerializer
+    filter_backends = [CountryFilterBackend, NameFilterBackend]
     lookup_field = 'uuid'
 
     def get_user(self, uuid):
@@ -376,6 +379,7 @@ class FollowersList(ListAPIView):
 class FollowingList(ListAPIView):
     
     serializer_class = UserPublicSerializer
+    filter_backends = [CountryFilterBackend, NameFilterBackend]
     lookup_field = 'uuid'
 
     def get_user(self, uuid):
@@ -478,6 +482,7 @@ class UserBlogsList(ListAPIView):
     
         authentication_classes = [JWTAuthentication]
         permission_classes = [IsAuthenticated]
+        filter_backends = [LatestFilterBackend]
     
         serializer_class = BlogListCreateSerializer
         http_method_names = ['get']
@@ -535,7 +540,6 @@ class BlogCommentListCreate(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = BlogCommentsSerializer
-    queryset = BlogComments.objects.all().order_by('-created_at')
     filter_backends = [LatestFilterBackend]
 
     def get_blog(self, uuid):
@@ -578,6 +582,7 @@ class ReplyCommentListCreate(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = ReplyCommentsSerializer
+    filter_backends = [LatestFilterBackend]
 
     #func to get the parent_blog_comment
     def get_parent_blog_comment(self, uuid):
@@ -648,7 +653,6 @@ class BlogLikesListCreate(ListCreateAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
 
     serializer_class = BlogLikesSerializer
-    queryset = BlogLikes.objects.all().order_by('-created_at')
     filter_backends = [LatestFilterBackend]
 
     def get_blog(self, uuid):
@@ -697,6 +701,7 @@ class CommentLikesListCreate(ListCreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticatedOrReadOnly]
     serializer_class = CommentsLikeSerializer
+    filter_backends = [LatestFilterBackend]
 
 
     #func to get the parent_blog_comment
