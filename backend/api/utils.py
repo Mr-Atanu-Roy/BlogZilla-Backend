@@ -1,5 +1,10 @@
 from rest_framework_simplejwt.tokens import RefreshToken
 
+
+ALLOWED_IMG_TYPES = ['jpg', 'jpeg', 'png']
+IMG_MAX_SIZE = 6*1024*1024      #6MB
+
+
 #returns access and refresh tokens for a user
 def get_token(user):
     '''

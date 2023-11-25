@@ -8,7 +8,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from backend.models import User, UserProfile, Tokens, Blog, BlogComments, BlogLikes, ReplyComments, LikeComments
 from backend.utils import TokenGenerator, EmailSender
 
-from .utils import str_to_list, list_to_str, is_valid_sequence
+from .utils import str_to_list, list_to_str, is_valid_sequence, ALLOWED_IMG_TYPES, IMG_MAX_SIZE
 
 
 #serializer for custom claims: access token -> uuid, first_name, last_name
@@ -307,8 +307,6 @@ class UserPrivateSerializer(serializers.ModelSerializer):
 
     def validate_phone(self, phone):
         if phone:
-            print(len(phone))
-
             if not phone.isdigit():
                 raise serializers.ValidationError('Phone number should be numeric.')
 
@@ -318,8 +316,18 @@ class UserPrivateSerializer(serializers.ModelSerializer):
         return phone   
 
 
-    def create(self, validated_data):
-        return None
+    def validate_profile_pic(self, profile_pic):
+        if not any(profile_pic.name.lower().endswith(ext) for ext in ALLOWED_IMG_TYPES):
+            raise serializers.ValidationError({
+                'profile_pic': 'Only jpg, jpeg, png files are allowed.'
+            })
+        if profile_pic.size > IMG_MAX_SIZE:
+            raise serializers.ValidationError({
+                'profile_pic': f'Profile pic size should be less than {IMG_MAX_SIZE/(1024*1024)} MB.'
+            })
+
+        return super().validate(profile_pic)
+
     
     def update(self, instance, validated_data):
         print(validated_data)
@@ -399,6 +407,19 @@ class BlogDetailSerializer(serializers.ModelSerializer):
         return tags
 
     
+    def validate_header_img(self, header_img):
+        if not any(header_img.name.lower().endswith(ext) for ext in ALLOWED_IMG_TYPES):
+            raise serializers.ValidationError({
+                'header_img': 'Only jpg, jpeg, png files are allowed.'
+            })
+        if header_img.size > IMG_MAX_SIZE:
+            raise serializers.ValidationError({
+                'header_img': f'Image size should be less than {IMG_MAX_SIZE/(1024*1024)} MB.'
+            })
+
+        return super().validate(header_img)
+
+
     def update(self, instance, validated_data):
         if validated_data.get("tags"):
             validated_data["tags"] = list_to_str(validated_data.get("tags"))
@@ -434,6 +455,18 @@ class BlogListCreateSerializer(serializers.ModelSerializer):
             })
         
         return tags
+    
+    def validate_header_img(self, header_img):
+        if not any(header_img.name.lower().endswith(ext) for ext in ALLOWED_IMG_TYPES):
+            raise serializers.ValidationError({
+                'header_img': 'Only jpg, jpeg, png files are allowed.'
+            })
+        if header_img.size > IMG_MAX_SIZE:
+            raise serializers.ValidationError({
+                'header_img': f'Image size should be less than {IMG_MAX_SIZE/(1024*1024)} MB.'
+            })
+
+        return super().validate(header_img)
     
     def create(self, validated_data):
         if validated_data.get("tags"):
