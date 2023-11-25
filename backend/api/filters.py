@@ -71,6 +71,8 @@ class LatestFilterBackend(BaseFilterBackend):
 
         if filter_param=="true":
             queryset = queryset.order_by('-created_at')
+        elif filter_param=="false":
+            queryset = queryset.order_by('created_at')
         
         
         return queryset
