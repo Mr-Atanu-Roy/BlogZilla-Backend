@@ -1,6 +1,6 @@
 from rest_framework.filters import BaseFilterBackend
 from .utils import str_to_list
-from django.db.models import Q
+from django.db.models import Q, Count
 from functools import reduce
 
 #filter backend to filter authors by country
@@ -21,6 +21,16 @@ class NameFilterBackend(BaseFilterBackend):
         filter_param = request.query_params.get('name')
         if filter_param:
             return queryset.filter(first_name__icontains=filter_param) | queryset.filter(last_name__icontains=filter_param)
+        
+        return queryset
+    
+#filter backend to filter authors by their name: first_name, last_name
+class PopularFilterBackend(BaseFilterBackend):
+
+    def filter_queryset(self, request, queryset, view):
+        filter_param = request.query_params.get('popular')
+        if filter_param == "true":
+            queryset = queryset.annotate(num_followers=Count('user_profile__followers')).order_by('-num_followers')
         
         return queryset
 
