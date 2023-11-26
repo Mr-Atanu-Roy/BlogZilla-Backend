@@ -46,7 +46,7 @@ class UserProfile(BaseModel):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='user_profile')
     profile_is_complete = models.BooleanField(default=False)
 
-    bio = models.TextField(max_length=500, blank=True)
+    bio = models.CharField(max_length=255, blank=True, null=True)
     website = models.URLField(max_length=200, blank=True)
     interests = models.CharField(max_length=500, blank=True)
     
