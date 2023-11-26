@@ -67,6 +67,7 @@ from .filters import (
     CountryFilterBackend, 
     BlogFilterBackend, 
     LatestFilterBackend, 
+    PopularFilterBackend,
 )
 
 
@@ -297,9 +298,9 @@ class UserPrivateProfile(RetrieveUpdateAPIView):
     
 #list all people/users with country and name filters
 class PeopleList(ListAPIView):
-    serializer_class = UserPublicSerializer
+    serializer_class = PeoplePublicSerializer
     queryset = User.objects.all()
-    filter_backends = [CountryFilterBackend, NameFilterBackend]
+    filter_backends = [CountryFilterBackend, NameFilterBackend, PopularFilterBackend]
 
 
 
@@ -319,7 +320,7 @@ class UserFollowingList(ListAPIView):
     filter_backends = [CountryFilterBackend, NameFilterBackend]
     http_method_names = ['get']
 
-    serializer_class = UserPublicSerializer
+    serializer_class = PeoplePublicSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -334,7 +335,7 @@ class UserFollowersList(ListAPIView):
     filter_backends = [CountryFilterBackend, NameFilterBackend]
     http_method_names = ['get']
 
-    serializer_class = UserPublicSerializer
+    serializer_class = PeoplePublicSerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -344,7 +345,7 @@ class UserFollowersList(ListAPIView):
 #list followers of a user
 class FollowersList(ListAPIView):
     
-    serializer_class = UserPublicSerializer
+    serializer_class = PeoplePublicSerializer
     filter_backends = [CountryFilterBackend, NameFilterBackend]
     lookup_field = 'uuid'
 
@@ -378,7 +379,7 @@ class FollowersList(ListAPIView):
 #list following of a user
 class FollowingList(ListAPIView):
     
-    serializer_class = UserPublicSerializer
+    serializer_class = PeoplePublicSerializer
     filter_backends = [CountryFilterBackend, NameFilterBackend]
     lookup_field = 'uuid'
 
