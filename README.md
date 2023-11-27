@@ -4,6 +4,9 @@
 This is the backend for BlogZilla blogging Website.
 Contains api for Blogzilla.
 
+This is the frontend for BlogZilla Website.
+Backend available at: [BlogZilla Backend](https://github.com/Mr-Atanu-Roy/BlogZilla-Frontend)
+
 
 ## Tech Stack
 
@@ -81,6 +84,9 @@ To run the project in your localserver
   py manage.py runserver
   
 ```
+
+Now the application is available at: http://127.0.0.1:8000/
+
 
 To allow request from any end point add the origin to `CORS_ORIGIN_WHITELIST` in settings.py
 
